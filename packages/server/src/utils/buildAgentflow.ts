@@ -133,6 +133,7 @@ interface IExecuteNodeParams {
     orgId: string
     workspaceId: string
     subscriptionId: string
+    productId: string
 }
 
 interface IExecuteAgentFlowParams extends Omit<IExecuteFlowParams, 'incomingInput'> {
@@ -838,7 +839,8 @@ const executeNode = async ({
     iterationContext,
     orgId,
     workspaceId,
-    subscriptionId
+    subscriptionId,
+    productId
 }: IExecuteNodeParams): Promise<{
     result: any
     shouldStop?: boolean
@@ -1060,7 +1062,8 @@ const executeNode = async ({
                             },
                             orgId,
                             workspaceId,
-                            subscriptionId
+                            subscriptionId,
+                            productId
                         })
 
                         // Store the result
@@ -1287,7 +1290,8 @@ export const executeAgentFlow = async ({
     isTool = false,
     orgId,
     workspaceId,
-    subscriptionId
+    subscriptionId,
+    productId
 }: IExecuteAgentFlowParams) => {
     logger.debug('\n🚀 Starting flow execution')
 
@@ -1400,6 +1404,29 @@ export const executeAgentFlow = async ({
                     previousState = execData.data.state
                     break
                 }
+            }
+        }
+
+        // Check if startState has been overridden from overrideConfig.startState and is enabled
+        const startAgentflowNode = nodes.find((node) => node.data.name === 'startAgentflow')
+        const isStartStateEnabled =
+            nodeOverrides && startAgentflowNode
+                ? nodeOverrides[startAgentflowNode.data.label]?.find((param: any) => param.name === 'startState')?.enabled ?? false
+                : false
+
+        if (isStartStateEnabled && overrideConfig?.startState) {
+            if (Array.isArray(overrideConfig.startState)) {
+                // Handle array format: [{"key": "foo", "value": "foo4"}]
+                const overrideStateObj: ICommonObject = {}
+                for (const item of overrideConfig.startState) {
+                    if (item.key && item.value !== undefined) {
+                        overrideStateObj[item.key] = item.value
+                    }
+                }
+                previousState = { ...previousState, ...overrideStateObj }
+            } else if (typeof overrideConfig.startState === 'object') {
+                // Object override: "startState": {...}
+                previousState = { ...previousState, ...overrideConfig.startState }
             }
         }
 
@@ -1571,7 +1598,7 @@ export const executeAgentFlow = async ({
         .find({
             where: {
                 chatflowid,
-                chatId
+                sessionId
             },
             order: {
                 createdDate: 'ASC'
@@ -1584,12 +1611,44 @@ export const executeAgentFlow = async ({
                     role: message.role === 'userMessage' ? 'user' : 'assistant'
                 }
 
-                // Only add additional_kwargs when fileUploads or artifacts exists and is not empty
-                if ((message.fileUploads && message.fileUploads !== '') || (message.artifacts && message.artifacts !== '')) {
+                const hasFileUploads = message.fileUploads && message.fileUploads !== ''
+                const hasArtifacts = message.artifacts && message.artifacts !== ''
+                const hasFileAnnotations = message.fileAnnotations && message.fileAnnotations !== ''
+                const hasUsedTools = message.usedTools && message.usedTools !== ''
+
+                if (hasFileUploads || hasArtifacts || hasFileAnnotations || hasUsedTools) {
                     mappedMessage.additional_kwargs = {}
 
-                    if (message.fileUploads && message.fileUploads !== '') {
-                        mappedMessage.additional_kwargs.fileUploads = message.fileUploads
+                    if (hasFileUploads) {
+                        try {
+                            mappedMessage.additional_kwargs.fileUploads = JSON.parse(message.fileUploads!)
+                        } catch {
+                            mappedMessage.additional_kwargs.fileUploads = message.fileUploads
+                        }
+                    }
+
+                    if (hasArtifacts) {
+                        try {
+                            mappedMessage.additional_kwargs.artifacts = JSON.parse(message.artifacts!)
+                        } catch {
+                            mappedMessage.additional_kwargs.artifacts = message.artifacts
+                        }
+                    }
+
+                    if (hasFileAnnotations) {
+                        try {
+                            mappedMessage.additional_kwargs.fileAnnotations = JSON.parse(message.fileAnnotations!)
+                        } catch {
+                            mappedMessage.additional_kwargs.fileAnnotations = message.fileAnnotations
+                        }
+                    }
+
+                    if (hasUsedTools) {
+                        try {
+                            mappedMessage.additional_kwargs.usedTools = JSON.parse(message.usedTools!)
+                        } catch {
+                            mappedMessage.additional_kwargs.usedTools = message.usedTools
+                        }
                     }
                 }
 
@@ -1699,7 +1758,8 @@ export const executeAgentFlow = async ({
                 iterationContext,
                 orgId,
                 workspaceId,
-                subscriptionId
+                subscriptionId,
+                productId
             })
 
             if (executionResult.agentFlowExecutedData) {
@@ -1965,7 +2025,9 @@ export const executeAgentFlow = async ({
             chatflowId: chatflowid,
             chatId,
             type: evaluationRunId ? ChatType.EVALUATION : isInternal ? ChatType.INTERNAL : ChatType.EXTERNAL,
-            flowGraph: getTelemetryFlowObj(nodes, edges)
+            flowGraph: getTelemetryFlowObj(nodes, edges),
+            productId,
+            subscriptionId
         },
         orgId
     )
