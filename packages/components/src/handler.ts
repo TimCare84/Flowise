@@ -306,7 +306,7 @@ export class ConsoleCallbackHandler extends BaseTracer {
 
     onToolStart(run: Run) {
         const crumbs = this.getBreadcrumbs(run)
-        this.logger.verbose(`[${this.orgId}]: [tool/start] [${crumbs}] Entering Tool run with input: "${run.inputs.input?.trim()}"`)
+        this.logger.info(`[${this.orgId}]: [tool/start] [${crumbs}] Executing Tool: ${run.name}. Input: "${run.inputs.input?.trim()}"`)
     }
 
     onToolEnd(run: Run) {
@@ -464,10 +464,10 @@ class ExtendedLunaryHandler extends LunaryHandler {
             userId,
             userProps: userId
                 ? {
-                      name: entity?.name ?? undefined,
-                      email: entity?.email ?? undefined,
-                      phone: entity?.phone ?? undefined
-                  }
+                    name: entity?.name ?? undefined,
+                    email: entity?.email ?? undefined,
+                    phone: entity?.phone ?? undefined
+                }
                 : undefined
         })
     }

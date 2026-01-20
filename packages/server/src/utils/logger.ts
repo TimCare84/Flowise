@@ -119,23 +119,26 @@ const logger = createLogger({
     },
     exitOnError: false,
     transports: [
-        new transports.Console(),
+        new transports.Console({
+            handleExceptions: true,
+            level: 'info'
+        }),
         ...(!process.env.STORAGE_TYPE || process.env.STORAGE_TYPE === 'local'
             ? [
-                  new DailyRotateFile({
-                      filename: path.join(logDir, config.logging.server.filename ?? 'server-%DATE%.log'),
-                      datePattern: 'YYYY-MM-DD-HH',
-                      maxSize: '20m',
-                      level: config.logging.server.level ?? 'info'
-                  })
-              ]
+                new DailyRotateFile({
+                    filename: path.join(logDir, config.logging.server.filename ?? 'server-%DATE%.log'),
+                    datePattern: 'YYYY-MM-DD-HH',
+                    maxSize: '20m',
+                    level: config.logging.server.level ?? 'info'
+                })
+            ]
             : []),
         ...(process.env.STORAGE_TYPE === 's3'
             ? [
-                  new transports.Stream({
-                      stream: s3ServerStream
-                  })
-              ]
+                new transports.Stream({
+                    stream: s3ServerStream
+                })
+            ]
             : []),
         ...(process.env.STORAGE_TYPE === 'gcs' ? [gcsServerStream] : [])
     ],
@@ -143,10 +146,10 @@ const logger = createLogger({
         ...(process.env.DEBUG && process.env.DEBUG === 'true' ? [new transports.Console()] : []),
         ...(process.env.STORAGE_TYPE === 's3'
             ? [
-                  new transports.Stream({
-                      stream: s3ErrorStream
-                  })
-              ]
+                new transports.Stream({
+                    stream: s3ErrorStream
+                })
+            ]
             : []),
         ...(process.env.STORAGE_TYPE === 'gcs' ? [gcsErrorStream] : [])
     ],
@@ -154,10 +157,10 @@ const logger = createLogger({
         ...(process.env.DEBUG && process.env.DEBUG === 'true' ? [new transports.Console()] : []),
         ...(process.env.STORAGE_TYPE === 's3'
             ? [
-                  new transports.Stream({
-                      stream: s3ErrorStream
-                  })
-              ]
+                new transports.Stream({
+                    stream: s3ErrorStream
+                })
+            ]
             : []),
         ...(process.env.STORAGE_TYPE === 'gcs' ? [gcsErrorStream] : []),
         // Always provide a fallback rejection handler when no other handlers are configured
@@ -176,18 +179,18 @@ requestLogger = createLogger({
         ...(process.env.DEBUG && process.env.DEBUG === 'true' ? [new transports.Console()] : []),
         ...(!process.env.STORAGE_TYPE || process.env.STORAGE_TYPE === 'local'
             ? [
-                  new transports.File({
-                      filename: path.join(logDir, config.logging.express.filename ?? 'server-requests.log.jsonl'),
-                      level: config.logging.express.level ?? 'debug'
-                  })
-              ]
+                new transports.File({
+                    filename: path.join(logDir, config.logging.express.filename ?? 'server-requests.log.jsonl'),
+                    level: config.logging.express.level ?? 'debug'
+                })
+            ]
             : []),
         ...(process.env.STORAGE_TYPE === 's3'
             ? [
-                  new transports.Stream({
-                      stream: s3ServerReqStream
-                  })
-              ]
+                new transports.Stream({
+                    stream: s3ServerReqStream
+                })
+            ]
             : []),
         ...(process.env.STORAGE_TYPE === 'gcs' ? [gcsServerReqStream] : [])
     ]
