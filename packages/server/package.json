@@ -148,7 +148,8 @@
         "uuid": "^9.0.1",
         "winston": "^3.9.0",
         "winston-daily-rotate-file": "^5.0.0",
-        "@supabase/supabase-js":"^1.13.1"
+        "@supabase/supabase-js": "^1.13.1",
+        "@composio/core": "^0.6.2"
     },
     "devDependencies": {
         "@types/content-disposition": "0.5.8",
