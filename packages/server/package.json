@@ -149,7 +149,8 @@
         "winston": "^3.9.0",
         "winston-daily-rotate-file": "^5.0.0",
         "@supabase/supabase-js": "^1.13.1",
-        "@composio/core": "^0.6.2"
+        "@composio/core": "^0.6.3",
+        "dayjs": "^1.11.19"
     },
     "devDependencies": {
         "@types/content-disposition": "0.5.8",
